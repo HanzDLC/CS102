@@ -1,0 +1,871 @@
+---
+title: "Movie Scrape"
+output: pdf_document
+date: "2024-02-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(ggplot2)
+library(dplyr)
+library(polite)
+library(xml2)
+library(magrittr)
+library(rvest)
+
+```
+
+```{r link}
+polite::use_manners(save_as ="polite_scrape.R")
+
+
+```
+
+```{r setting vectors}
+urlValues <- c("tt13560574","tt15009428","tt17351924","tt15398776","tt6166392","tt10676048","tt1517268","tt15314262","tt1160419","tt8772262")
+
+
+movieTitles <- c("X","Argylle","Saltburn","Oppenheimer","Wonka","The Marvels","Barbie","The Beekeper","Dune","Midsommar")
+
+movieURLs <- sprintf("https://www.imdb.com/title/%s/reviews/", urlValues)
+as.list(movieURLs)
+
+```
+
+<!-- Important Notice:
+There are 10 repetitions of the same code because I cannot get the pagination key automatically. 
+The rvest package could not get the pagination keys for each movie that is why I have to manually collect the pagination keys for each movie.
+
+
+-->
+
+<!-- How to Run:
+1. Run the each segment of the code from 1 to 10 consequently
+2. Make sure to take an interval rest each block of code to avoid too many requests.
+3. Run the {r create DF} block of code to combine all of the  data frame into one data frame.
+
+
+-->
+
+```{r scrape for first movie}
+limit <- 300
+
+paginationKeys1 <- c("g4w6ddbmqyzdo6ic4oxwjnrtr7qmmar33modv7peb3cpqtttfjrkkdc3oy4vlmzyodomfwwfip6goiqhlipanbvtq3qa",
+                    "g4w6ddbmqyzdo6ic4oxwjnzxrhsmwbb53imtd4plaxapgu35pjt6ubk3oa2f5njib4dty65ghkytxo6lfmdwu2hke52m2",
+                    "g4w6ddbmqyzdo6ic4oxwjnzrrxr4wcb63ukd74pmala7etttfjrkkdk6payftnbyoavhzejisy7cvo6lxqhzc2i2ahyq",
+                    "g4w6ddbmqyzdo6ic4oxwjnburttmubzy3mmd377fahdpyvd5pjt6ucsspe4frnbjb4dxj657bchci5d4f7gs2bqb6lgww",
+                    "g4w6ddbmqyzdo6ic4oxwjnjyqptmobj23und57xka7c7stttfjrkkckyo42vxmjyodnxhyfjj7robdtj3nk2dkfs4lca",
+                    "g4w6ddbmqyzdo6ic4oxwjnjzrhrm4br32intd6hmalb76vlcoq366sstou4f5prkdf4k56fp2yslsvnf2rpklf44yhs25sq",
+                    "g4w6ddbmqyzdo6ic4oxwjnjurpqm2azz3ekdz7xeape7uu3coq366sstpe4f5pzcdf4k4qmroz2ye3s4m3zohbupx2bhp2y",
+                    "g4w6ddbmqyzdo6ic4oxwjnjtqpq44cj72imdz6hja7cp6vd5pjt6ubc2oyyf7nrob4d435o56bwyb2c5pug4s3hlb2p3w",
+                    "g4w6ddbmqyzdo6ic4oxwjnjqrxqmsbzy2iot56hfahbp6ul5pjt6ubcypezvznbpb4d2wrvudb4sut6ob4q2lseorr6ly",
+                    "g4w6ddbmqyzdo6ic4oxwjmryrxqmmaj53imtd67nb3epww3eoq366sstoizvrmrjdb4k52362wfnv2yur3hacpx3ojc7noy",
+                    "g4w6ddbmqyzdo6ic4oxwjmrzr3rmuaj53mndb67paxapuwt5pjt6ubkzoazvxmzcb4d77mhtgh4iyf3vqootevbabjcx2",
+                    "g4w6ddbmqyzdo6ic4oxwjmrwrps44bbt3umtv67ka7b72tttfjrkkdk5oi2fvpryod4bthwqhkk74tpiixcsyuaklsiq")
+
+# Initialize vectors to store data
+Title1 <- character(0)
+User1 <- character(0)
+Date1 <- character(0)
+Content1 <- character(0)
+Stars1 <- character(0)
+counter<- 0  
+  
+  for (i in 1:13) {
+    url1 <- paste0(movieURLs[1], '_ajax?&paginationKey=', paginationKeys1[i], sep = "")
+    
+    session <- bow(url1,
+                   user_agent = "Educational")
+    
+    parentNode1 <- scrape(session) %>%
+      html_elements('.review-container')
+    
+    currentTitles1 <- parentNode1 %>%
+      html_node('a.title') %>%
+      html_text()
+    
+    currentUsers1 <- parentNode1 %>%
+      html_node('.display-name-link') %>%
+      html_text()
+    
+    currentDates1 <- parentNode1 %>%
+      html_node('.review-date') %>%
+      html_text()
+    
+    currentContents1 <- parentNode1 %>%
+      html_node('.text.show-more__control') %>%
+      html_text()
+    
+    currentStars1 <- parentNode1 %>%
+      html_node('.ipl-ratings-bar') %>%
+      html_text()
+    
+    # Append data to vectors
+    Title1 <- c(Title1, currentTitles1)
+    User1 <- c(User1, currentUsers1)
+    Date1 <- c(Date1, currentDates1)
+    Content1 <- c(Content1, currentContents1)
+    Stars1 <- c(Stars1, currentStars1)
+    
+    # Update counter
+    counter <- counter + length(currentTitles1)
+    
+    # Check if limit is reached for this movie
+    if (counter == limit) {
+      break
+    }
+  }
+  Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+
+# Create dataframe
+movieReviewData1 <- data.frame(
+  Movie_Title = rep(movieTitles[1],length(counter)),
+  Title = Title1,
+  User = User1,
+  Date = Date1,
+  Content = Content1,
+  Stars = Stars1
+)
+
+```
+
+```{r scrape for 2nd movie}
+
+paginationKeys2 <- c("g4w6ddbmqyzdo6ic4oxwjnrsr7s44arz3iotd7ppalb76ul5pjt6udc2oe4vxnbnb4dw65cgdmbsr322lsssix2whl2t2",
+                     "g4w6ddbmqyzdo6ic4oxwjnzqr3um4ar33emdt77la3bp4w35pjt6ubc6pe4f7prcb4dzanrdlmixxfbtukrjwvmx2dvpy",
+                     "g4w6ddbmqyzdo6ic4oxwjnbsrpqm2ajy2mkdx67ia3ap4w35pjt6ubc5oayf5nbib4d6zhalpre2olzpanuttnnslodae",
+                     "g4w6ddbmqyzdo6ic4oxwjnjyrdq4oar63iotx67ma7apsvlhoq366sssou4flprjdv4k5am4uijtze43j4unzff64tevwjq", 
+                     "g4w6ddbmqyzdo6ic4oxwjnjsrttmscb52ipdv7hiapbp2u3eoq366sssoyyf7nzodj4k5qiixnt774a4ti7sfhqqtyoavqi",
+                     "g4w6ddbmqyzdo6ic4oxwjmrzrxsm4aj62mpt76xkaxcp6vd5pjt6ubc5oeyvvnjlb4d3mzq3qhk6ukbzb3jtiyzylm2uq", 
+                     "g4w6ddbmqyzdo6ic4oxwjmruqpumwbjz3aktd7xeada7quleoq366sssoyyv7mzcdj4k5yt7kyujmvhkqizpw2lrx3eatvi",
+                     "g4w6ddbmqyzdo6ic4oxwjmrtqlr4mab53aotz7peatepyv3hoq366sssoyyvzpzjdf4k45sin4ew4i6mghrhe3iqd7e26ty", 
+                     "g4w6ddbmqyzdo6ic4oxwjmrrr3r4ybr43imtz6xmaxb7yvl5pjt6ubc5oeyflnbmb4dqrlz4gdfzvez7pwpcbutiw4rgw", 
+                     "g4w6ddbmqyzdo6ic4oxwjmzzrpq4wbj33ikt54peata7yw35pjt6ubc5oa2vtnzdb4dwx3yvmukynevxs7ze4sgjitge2", 
+                     "g4w6ddbmqyzdo6ic4oxwjmzvr7q4sbr53umdb77iahapgul5pjt6ubc5oa4vxmrnb4dqim7x3c5s27bvt5qiawwua6kh4",
+                     "g4w6ddbmqyzdo6ic4oxwjmzqqpt4ybj63ektv77fapc74vddoq366sssoyyfvnbldr4k5yeurbpok72ppaydbw3nnuv3z5i")
+
+Title2 <- c()
+User2 <- c()
+Date2 <- c()
+Content2 <- c()
+Stars2 <- c()
+counter<- 0  
+  
+  for (j in 1:12) {
+    url2 <- paste0(movieURLs[2], '_ajax?&paginationKey=', paginationKeys2[j], sep = "")
+    
+    session <- bow(url2,
+                   user_agent = "Educational")
+    
+    parentNode2 <- scrape(session) %>%
+      html_elements('.review-container')
+    
+    currentTitles2 <- parentNode2 %>%
+      html_node('a.title') %>%
+      html_text()
+    
+    currentUsers2 <- parentNode2 %>%
+      html_node('.display-name-link') %>%
+      html_text()
+    
+    currentDates2 <- parentNode2 %>%
+      html_node('.review-date') %>%
+      html_text()
+    
+    currentContents2 <- parentNode2 %>%
+      html_node('.text.show-more__control') %>%
+      html_text()
+    
+    currentStars2 <- parentNode2 %>%
+      html_node('.ipl-ratings-bar') %>%
+      html_text()
+    
+    # Append data to vectors
+    Title2 <- c(Title2, currentTitles2)
+    User2 <- c(User2, currentUsers2)
+    Date2 <- c(Date2, currentDates2)
+    Content2 <- c(Content2, currentContents2)
+    Stars2 <- c(Stars2, currentStars2)
+    
+    # Update counter
+    counter <- counter + length(currentTitles2)
+    
+    # Check if limit is reached for this movie
+    if (counter == limit) {
+      break
+    }
+  }
+  Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+
+# Create dataframe
+movieReviewData2 <- data.frame(
+  Movie_Title = rep(movieTitles[2],length(counter)),
+  Title = Title2,
+  User = User2,
+  Date = Date2,
+  Content = Content2,
+  Stars = Stars2
+)
+
+```
+
+
+
+
+
+
+```{r scrape for 3rd movie}
+paginationKeys3 <- c("g4w6ddbmqyzdo6ic4oxwjnrvrpu46bz53qot36xka7ep4ul5pjt6ubc7o44vvmzpb4dwlyrmpst62nv7t7b264knki2zo",
+                     "g4w6ddbmqyzdo6ic4oxwjnzsrlt46br42intd67naxcomqbdf4wkqcctoi4fljchjejoyxteq4ipn27wcujktiuwli",
+                     "g4w6ddbmqyzdo6ic4oxwjnbwqptmoar73ymtr6hpb3c7sw35pjt6ubc6oe4v7mbkb4d5tzihawjwjjk5pf2drzndqcdhk",
+                     "g4w6ddbmqyzdo6ic4oxwjnbsrtt4ubb63qod767ka7bpuud5pjt6ubc7oq4v5nznb4dzaybh4364phlr7eparkhsbpzhu",
+                     "g4w6ddbmqyzdo6ic4oxwjnbrrxum4az43iodv7pmapdp6tttfjrkicc2oi2fvmjyobjeeetyfej2jpa2unqnx2byetua",
+                     "g4w6ddbmqyzdo6ic4oxwjnjyr7tm6abs3emd367paxepev35pjt6ubc6oe3ftprcb4d5wwl2y3aza3c4byr4vobp7x74a",
+                     "g4w6ddbmqyzdo6ic4oxwjnjwrhq4yaz63ykt77heapap2v35pjt6ubc6om2vvmjob4dsxsfnwmgcxveccseiqtmvnb3pe",
+                     "g4w6ddbmqyzdo6ic4oxwjnjur7qmqab42iodd6hfalbp4vd5pjt6ubc7oyzfznbcb4dqp74b7fak36vpp6ajeungobxri",
+                     "g4w6ddbmqyzdo6ic4oxwjnjsrts4qbz33ept37hia3d7yv3hoq366sssouzfvmzjcv4k4g2uzsqseas4jrhipcg5vltcbdy",
+                     "g4w6ddbmqyzdo6ic4oxwjnjqrtr4ucb63qmt777pa7dpgudcoq366sssouzf3nzdd54k5f2m7fqrhrk6auenaf5unifjecq",
+                     "g4w6ddbmqyzdo6ic4oxwjnjrrpt4qcj32intr67kalcpuu3eoq366sssoyzvrmjkdz4k4plfwj6iemqcpkrwwbfxzq47bpi",
+                     "g4w6ddbmqyzdo6ic4oxwjmryrps46aj62mptt77ob7d7qtttfjrkic22ou2f5mryodtnnhypjx6mx56d7rjlywuxofeq")
+
+
+Title3 <- c()
+User3 <- c()
+Date3 <- c()
+Content3 <- c()
+Stars3 <- c()
+counter <- 0  
+  
+for (k in 1:12) {
+  url3 <- paste0(movieURLs[3], '_ajax?&paginationKey=', paginationKeys3[k], sep = "")
+  
+  session <- bow(url3,
+                 user_agent = "Educational")
+  
+  parentNode3 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles3 <- parentNode3 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers3 <- parentNode3 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates3 <- parentNode3 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents3 <- parentNode3 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars3 <- parentNode3 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title3 <- c(Title3, currentTitles3)
+  User3 <- c(User3, currentUsers3)
+  Date3 <- c(Date3, currentDates3)
+  Content3 <- c(Content3, currentContents3)
+  Stars3 <- c(Stars3, currentStars3)
+  
+  # Update counter
+  counter <- counter + length(currentTitles3)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+# Create dataframe
+movieReviewData3 <- data.frame(
+  Movie_Title = rep(movieTitles[3],length(counter)),
+  Title = Title3,
+  User = User3,
+  Date = Date3,
+  Content = Content3,
+  Stars = Stars3
+)
+```
+
+```{r scrape for 4th movie}
+paginationKeys4 <- c("g4xojermtizcs3yh7wtxrnrwqpq4waj43qmtd7xqcwb32w3dnmrk6bc2mjojboi2ofvik2fwiv2wzrgawvd24",
+                     "g4u6dermtizcsyqh7gxxzobxrpsmwbz334pdt67qcwb32w3dnatkudc4mjolwxhqj4px75y3o3i3p5q4ihfmo",
+                     "g4v6jermtizcsyqd62xxfmjtrxummbry3mod367qcwb32w3fmeq2sck7mjokzaz7ghxs6ddhikp74dy3gr6u4",
+                     "g4w6ddbsqyxdo6if7gwh7njvrhtmoaj334kd76hldpj3qflinis2qbksoirtbgu5pdcviuhbfspv3yv3onsbily",
+                     "g4w6hcjsqyxdo6ig62xhvoburxu4mbz73mkd37hndpj3qflinqr22d24oartb5oghaclxmpfl4eei72fxfv5eja",
+                     "g4w6jdbsqyxdo6ig7cxxzmzsrtum4art3mptz77fdpj3qflinqwkids2oirtagkp36abmcbvziju2hgtmr7ftxq",
+                     "g4w6ncbsqyxdo6ig7kth5mzyr7r44aj32mptx7hpdpj3qfliniq2sc27oqrtbanl6g4jl32m7jnmoy5t5d4is5i",
+                     "g4w6rbjsqyxdo6ig7oxhznzsqpqmwbr43eot56xqcwb32w3dnaq2kbk6mjoof6oxmdgznxr5daygajoe2jg7k",
+                     "g4xohcbsqyxdo6ig7sxx5mbwrdrmmbr43emt777kaho6qebgmeq2wcctoaye7w4eza7gu32a5xrcsb5bvhphom5x",
+                     "g4xolbjsqyxdo6ig72txfmjwrlq4ycjz3eot767jdpj3qflinit2qdc6oqrta4tbtcx2ioopmksagnozoimsz3y",
+                     "g4xoncbsqyxdo6ie76thfobwrlu4yar434mdx6xldpj3qflinirk6dk5pertbu6xe2hbd5ue5tkfp7dlsqpk7pq",
+                     "g4xorbjsqyxdo6ib62th3ojyrhtmqart3modd7pfapo6qebgmet2yd26pazu7w3nlx4pas5vp6jijayc5bmuphre", 
+                     "g4x6hcbsqyxdo6ih62th7mjqrtt44cjt3mnd567kdpj3qfliniw24dkso4rtalqyaaiu4lretpgpmpb4ab3f7oy")
+       
+
+
+Title4 <- c()
+User4 <- c()
+Date4 <- c()
+Content4 <- c()
+Stars4 <- c()
+counter <- 0  
+  
+for (l in 1:13) {
+  url4 <- paste0(movieURLs[4], '_ajax?&paginationKey=', paginationKeys4[l], sep = "")
+  
+  session <- bow(url4,
+                 user_agent = "Educational")
+  
+  parentNode4 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles4 <- parentNode4 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers4 <- parentNode4 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates4 <- parentNode4 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents4 <- parentNode4 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars4 <- parentNode4 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title4 <- c(Title4, currentTitles4)
+  User4 <- c(User4, currentUsers4)
+  Date4 <- c(Date4, currentDates4)
+  Content4 <- c(Content4, currentContents4)
+  Stars4 <- c(Stars4, currentStars4)
+  
+  # Update counter
+  counter <- counter + length(currentTitles4)
+  
+  # Check if limit is reached for this movie
+  if (counter >= limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+# Create dataframe
+movieReviewData4 <- data.frame(
+  Movie_Title = rep(movieTitles[4], length(counter)),
+  Title = Title4,
+  User = User4,
+  Date = Date4,
+  Content = Content4,
+  Stars = Stars4
+)
+movieReviewData4 <- movieReviewData4[-c(301:324), ]
+```
+
+```{r scrape for 5th movie}
+paginationKeys5 <- c("g4w6ddbmqyzdo6ic4oxwjnrtr7tm4arz2mpdt67eb7dp6ul5pjt6ubc6om2v3prkb4dwclad6u3olohiuet4kie7dkdmu",
+                     "g4w6ddbmqyzdo6ic4oxwjnbzrht44ab22ikdr6hmb7b7yu35pjt6ubc7pezf7nzib4d24ewuxcil36nh6376dy2hvm56u",
+                     "g4w6ddbmqyzdo6ic4oxwjnbtqls46cbz3apdz4piada7uw35pjt6ubc7pa3v5mjob4dyrkksamju7wi7b7ikryszgv2y4",
+                     "g4w6ddbmqyzdo6ic4oxwjnjzqpsm6cjy3yodx67natdp4udhoq366sssoq4vjmjjdf4k5s4cmzguaur2auziha2q6gfrtjy",
+                     "g4w6ddbmqyzdo6ic4oxwjnjvrxtmwcby3mpdb7hkb3cpgul5pjt6ubc7pe4f7pzjb4dqhyhjtmt4qwuye5xjuotfklbgq",
+                     "g4w6ddbmqyzdo6ic4oxwjnjqrdrmscjt34otd6hib7c7evdfoq366sssouyvjnrkdz4k464sl4dfshp34hpdeipbbotc5my",
+                     "g4w6ddbmqyzdo6ic4oxwjmrwrxum6cb63indt4pfa3e7gvlcoq366sssoq4vvmbodr4k46ybvll2n56rauveufv2uxqlzjq",
+                     "g4w6ddbmqyzdo6ic4oxwjmrsrpq44cj53akdt6xna3ap2tttfjrkic23oa3v3nbyoarrg4ycu6rusa6ywcul5wfupyba",
+                     "g4w6ddbmqyzdo6ic4oxwjmzzqpr4wcb63untx7pja7dpsvt5pjt6ubc6oizf7prpb4du2pya77yin53jkyrqtkigj67mg",
+                     "g4w6ddbmqyzdo6ic4oxwjmzwrls4mbj62ipdz7xjatcpwul5pjt6ubc6omyf5prjb4drg4yycjhzruphbcvjkyxxprch2",
+                     "g4w6ddbmqyzdo6ic4oxwjmzurhumubz23yptd7hka3cpswtcoq366sssoyzvtnzcdz4k5inu2dxr5ujly6gt2meecgv5eai",
+                     "g4w6ddbmqyzdo6ic4oxwjmzvrps44bb33eodx6xka7c7qudcoq366sssouzvlnjmdj4k4az4atreaigqmm5vb2a57i3yauy")
+
+
+Title5 <- c()
+User5 <- c()
+Date5 <- c()
+Content5 <- c()
+Stars5 <- c()
+counter <- 0  
+  
+for (m in 1:12) {
+  url5 <- paste0(movieURLs[5], '_ajax?&paginationKey=', paginationKeys5[m], sep = "")
+  
+  session <- bow(url5,
+                 user_agent = "Educational")
+  
+  parentNode5 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles5 <- parentNode5 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers5 <- parentNode5 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates5 <- parentNode5 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents5 <- parentNode5 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars5 <- parentNode5 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title5 <- c(Title5, currentTitles5)
+  User5 <- c(User5, currentUsers5)
+  Date5 <- c(Date5, currentDates5)
+  Content5 <- c(Content5, currentContents5)
+  Stars5 <- c(Stars5, currentStars5)
+  
+  # Update counter
+  counter <- counter + length(currentTitles5)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+# Create dataframe
+movieReviewData5 <- data.frame(
+  Movie_Title = rep(movieTitles[5], length(counter)),
+  Title = Title5,
+  User = User5,
+  Date = Date5,
+  Content = Content5,
+  Stars = Stars5
+)
+```
+
+```{r scrape for 6th movie}
+paginationKeys6 <- c("g4w6ddbmqyzdo6ic4oxwjnrurxrmmcb33uptz6ppaha7uvl5pjt6ubc7omyf5nbjb4dx25u4kmibb6lzyrbxowthfx36e",
+                     "g4w6ddbmqyzdo6ic4oxwjnzvrdt4ucbs34mdt6hkape7stttfjrkic22oe4vlnjyodng46i3ql5usnfmhr7o3xntjjsa",
+                     "g4w6ddbmqyzdo6ic4oxwjnbyqps4waz73motz6heate7uu35pjt6ubc7oi2vzpzpb4dq2eyefrco4k6u7h4f52dyc7oqm",
+                     "g4w6ddbmqyzdo6ic4oxwjnbxrds4ybb63aodr4heaxb7qwt5pjt6ubc7oi3vrmjdb4dyitqv5tlmmcwergjsrwxzkbyms",
+                     "g4w6ddbmqyzdo6ic4oxwjnbsrls4ucby2ipdd4peapbp4vd5pjt6ubc7oizf7nrdb4du6f2cshcjhsgfkg43ssuuztfdy",
+                     "g4w6ddbmqyzdo6ic4oxwjnbrr7qm6ar63mkt36xma7d7yvl5pjt6ubc5oiyfjmbmb4dzh3otb3kii7dk7t6gxvee5ixgq",
+                     "g4w6ddbmqyzdo6ic4oxwjnjyrdsmmcb53uod37pnaxcpsv3coq366sssou3ftnjddj4k5qyfmlzbaebdknu4brpz5qffkli",
+                     "g4w6ddbmqyzdo6ic4oxwjnjzrpumsaj32ikdb7xiapd7gul5pjt6ubc5oizf7nzob4dxs6f2mmh4r7pqximn45byuzbg4",
+                     "g4w6ddbmqyzdo6ic4oxwjnjxrttmsbz43qndr6pea7epqulcoq366sssoqzfrnrid54k43s2fig6bj5dft2lubeod3mxjyy",
+                     "g4w6ddbmqyzdo6ic4oxwjnjurdtmyar73untt6xja7d7gw35pjt6ubc7oi4fvpzmb4d5xaezv4mkvzg2tkpbbpbf74yvo",
+                     "g4w6ddbmqyzdo6ic4oxwjnjsqpumwajs2iktd77pb7c7wvlfoq366sssoyyfvmrkcr4k45qogdf6njslr5sjyr7fpw2gbza",
+                     "g4w6ddbmqyzdo6ic4oxwjnjtr3umycjz3ikt34hja3apuudfoq366sssou3vrmjpdj4k5u2d7tnd3yvg5zam37mcxrysiyi")
+
+Title6 <- c()
+User6 <- c()
+Date6 <- c()
+Content6 <- c()
+Stars6 <- c()
+counter <- 0  
+  
+for (n in 1:12) {
+  url6 <- paste0(movieURLs[6], '_ajax?&paginationKey=', paginationKeys6[n], sep = "")
+  
+  session <- bow(url6,
+                 user_agent = "Educational")
+  
+  parentNode6 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles6 <- parentNode6 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers6 <- parentNode6 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates6 <- parentNode6 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents6 <- parentNode6 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars6 <- parentNode6 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title6 <- c(Title6, currentTitles6)
+  User6 <- c(User6, currentUsers6)
+  Date6 <- c(Date6, currentDates6)
+  Content6 <- c(Content6, currentContents6)
+  Stars6 <- c(Stars6, currentStars6)
+  
+  # Update counter
+  counter <- counter + length(currentTitles6)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+# Create dataframe
+movieReviewData6 <- data.frame(
+  Movie_Title = rep(movieTitles[6], length(counter)),
+  Title = Title6,
+  User = User6,
+  Date = Date6,
+  Content = Content6,
+  Stars = Stars6
+)
+```
+
+```{r scrape for movie 7}
+paginationKeys7 <- c("g4xojermtizcsyqf7gvhtobwrxqmwbr43emtv7pqcwb32w3dnaqkscssmjofpp4cgdiq3wfgbdvqxhbf4g4ug",
+                     "g4u6dermtizcsyih7cth5nbwrdqm2br73qkddzh6iwdpguldnqr2ibcjdvm2byhckixd2t52ogisvrlfnmma",
+                     "g4v6jermtizcsyia72vhrmbuqpr4wcbs3umtxzh6iwdpgudcnark2d2jdwwfo7kjr6ag6eputbuxmcjgzynq",
+                     "g4w6ddbsqyxdo6ih7ovx7mzxqpqm4ab53eot56pjdpj3qflinis2icc6omrta25a6i6ouhy4vbghebmkog7u6xa",
+                     "g4w6hcjsqyxdo6ih72uhrmbrr7t4ybzz3emdr6pidpj3qflinisk2c27ourtb6lcvt3e7iivvvatdc33ng5vc6i",
+                     "g4w6jdbsqyxdo6ig62vhxobzrlum6abs3amdv77fdpj3qfliniskudc6oqrtae6awz3nqo5pum5nbxfih6vruka",
+                     "g4w6ncbsqyxdo6if7wwhfmrurds4ybr33end77xkdpj3qflinmsk6bkypertaovafz4r6jgnpgust2gyylr2fba",
+                     "g4w6rbjsqyxdo6ig7gtxrmzqrxsm6cj63and36hiaho6qebgmet26dc5oq4u7w5fr4y65un62mospoehnml2cnp3",
+                     "g4xohcbsqyxdo6ig7kvxhobrrts4mbbs2iptt7xedpj3qflinuw24ds5oqrtaq2acgifvjfbivkcr6gsmxj46zq",
+                     "g4xolbjsqyxdo6if76wx5nzrrhtmuaj73mktz7xfdpj3qflinysk4cs2oertank5itlyjbxpmk7y34bfxfzj6fa",
+                     "g4xoncbsqyxdo6ig72vhtnzwrtqm6cb63mmtb7pedpj3qflinuq2ydk5o4rta66qykkonzl7ect4cf2uioc7iey",
+                     "g4xorbjsqyxdo6ig7wvhznjxrpu4uajz3aotv6hldpj3qfliniq22cc2oirtajoahcgmfcowwzodyw6vn5hdnsq", 
+                     "g4x6hcbsqyxdo6ig72xhrmbtrlq4obj23ikd57xfdpj3qfliniqkqcssoirtayic5dbx6ncnaqzckk4pczuqldq")
+
+Title7 <- c()
+User7 <- c()
+Date7 <- c()
+Content7 <- c()
+Stars7 <- c()
+counter <- 0  
+  
+for (n in 1:13) {
+  url7 <- paste0(movieURLs[7], '_ajax?&paginationKey=', paginationKeys7[n], sep = "")
+  
+  session <- bow(url7,
+                 user_agent = "Educational")
+  
+  parentNode7 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles7 <- parentNode7 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers7 <- parentNode7 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates7 <- parentNode7 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents7 <- parentNode7 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars7 <- parentNode7 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title7 <- c(Title7, currentTitles7)
+  User7 <- c(User7, currentUsers7)
+  Date7 <- c(Date7, currentDates7)
+  Content7 <- c(Content7, currentContents7)
+  Stars7 <- c(Stars7, currentStars7)
+  
+  # Update counter
+  counter <- counter + length(currentTitles7)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+# Create dataframe
+movieReviewData7 <- data.frame(
+  Movie_Title = rep(movieTitles[7], length(counter)),
+  Title = Title7,
+  User = User7,
+  Date = Date7,
+  Content = Content7,
+  Stars = Stars7
+)
+movieReviewData7 <- movieReviewData7[-c(301:324), ]
+```
+
+```{r scrape for 8th movie}
+paginationKeys8 <- c("g4w6ddbmqyzdo6ic4oxwjnzrqls42ary3qptd6xeb7epyvl5pjt6ubc6ou3fjnjpb4dvgqbexogkf4rjpk3trcjoshhfo",
+                     "g4w6ddbmqyzdo6ic4oxwjnbrrlr4scbt3undb6plapbpeul5pjt6ubc5oezfxnjkb4dq7tfkjwws76v6rm5godbe6g3qm",
+                     "g4w6ddbmqyzdo6ic4oxwjnjxrxq42bjy3imtx6hna3bp2vd5pjt6ubc5oa3fjmjkb4dzbyysuih76vwmrygw6cppqwxqk",
+                     "g4w6ddbmqyzdo6ic4oxwjnjqrhs4ocjy3mpt56pealc76vd5pjt6ubc6ou4ftmrib4dsuqzpujnjs23qreprdgnpfgw2u",
+                     "g4w6ddbmqyzdo6ic4oxwjmrwrdt4ubjs3modb77ja7ap6vd5pjt6ubc6oy3vtmjpb4d5weeumotyuo4fnw2ftvfufyody",
+                     "g4w6ddbmqyzdo6ic4oxwjmrtqlr44cjz3aptz6hnatepgvdeoq366sssou3f5mzdd54k553hxw2dtnkl6db5e7itqdi62ey",
+                     "g4w6ddbmqyzdo6ic4oxwjmzyqlt4yaz52iotd4pnaxcpyvl5pjt6ubc6pe4vrmjmb4dyzyzwayeueea5jucur7psdjrlg",
+                     "g4w6ddbmqyzdo6ic4oxwjmzzrlrm6cjz3akdx7hla3a7su35pjt6ubc6ou4vxmrnb4d6it2n2ph7krnn7rfj4woa4m34q",
+                     "g4w6ddbmqyzdo6ic4oxwjmzxqpq4mbz334ndz6pnahb72w35pjt6ubc6o43fzmrdb4dxdi7pzyzvry5rm5dcygpde2vpe",
+                     "g4w6ddbmqyzdo6ic4oxwjmzurtu4sbz434mdr4hka7c7yv35pjt6ubc6pa2frmbdb4dwqvq4pdkprhz2gvwiyyd5gwxte",
+                     "g4w6ddbmqyzdo6ic4oxwjmzvrdsmqbzz2mntb7pjb3bpsutioq366sssoyyvzpzlcr4k55eju3euzqdnpgjxjebygdwsxpq",
+                     "g4w6ddbmqyzdo6ic4oxwjmztrts42ars3imtd6pka7apqw3joq366sssou4fjmbmdv4k4mrrzm6vqxekmh6xqooze2yumiy")
+
+Title8 <- c()
+User8 <- c()
+Date8 <- c()
+Content8 <- c()
+Stars8 <- c()
+counter <- 0  
+  
+for (o in 1:12) {
+  url8 <- paste0(movieURLs[8], '_ajax?&paginationKey=', paginationKeys8[o], sep = "")
+  
+  session <- bow(url8,
+                 user_agent = "Educational")
+  
+  parentNode8 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles8 <- parentNode8 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers8 <- parentNode8 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates8 <- parentNode8 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents8 <- parentNode8 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars8 <- parentNode8 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title8 <- c(Title8, currentTitles8)
+  User8 <- c(User8, currentUsers8)
+  Date8 <- c(Date8, currentDates8)
+  Content8 <- c(Content8, currentContents8)
+  Stars8 <- c(Stars8, currentStars8)
+  
+  # Update counter
+  counter <- counter + length(currentTitles8)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+
+# Create dataframe
+movieReviewData8 <- data.frame(
+  Movie_Title = rep(movieTitles[8], length(counter)),
+  Title = Title8,
+  User = User8,
+  Date = Date8,
+  Content = Content8,
+  Stars = Stars8
+)
+
+```
+
+```{r scrape for the 9th movie}
+paginationKeys9 <- c("g4w6ddbmqyzdo6ic4oxwjnrzrts42cjt3end377ea7cpqud5pjt6ucs7o42f7prkb4d7z676yw6vhzldg2uvsqqzoexhy",
+                     "g4w6ddbmqyzdo6ic4oxwjnrwrlumybzs3ektv4pmahdpevl5pjt6ucssom3fzmjdb4dylufa6w3j4zdimqf4lxaiv5hmg",
+                     "g4w6ddbmqyzdo6ic4oxwjnrxrxrmqars3andd6pfa3ep4tttfjrkuds6pazflmryodrmas7krxsfsmicpk2xcusdgc4q",
+                     "g4w6ddbmqyzdo6ic4oxwjnrxr7tmyazy3iptd7hlapb7sv35pjt6ucsype4f7nbmb4du7hhd4ovvzb7staspfwn2w4p4k",
+                     "g4w6ddbmqyzdo6ic4oxwjnrxrdt4scb43mot34hoaxdpwul5pjt6ucsyou4v7nbkb4dxu63cntgfcwsfyd7vfd2o3xjew",
+                     "g4w6ddbmqyzdo6ic4oxwjnruqpq42bzy3emtt77mb7e72wt5pjt6ucsyou3fxmjib4dzp2qryulx5jwo6klmooyvqrtzg",
+                     "g4w6ddbmqyzdo6ic4oxwjnrurdrmobjz3ukd56peadcpytttfjrkuds5oi3fxnzyoc6kzqo3zamq4guyuluj6ap2ypra",
+                     "g4w6ddbmqyzdo6ic4oxwjnrvr7t4sbj23yptt4pjb3dp6v35pjt6ucsypa3fjnjib4dxaoen2opsdntkxio7l5yvb4oyq",
+                     "g4w6ddbmqyzdo6ic4oxwjnrsrxumobr23qot577kadd7yvt5pjt6ucsypeyvvnzmb4d3zq4eyfec4tcrwdadzdqbgolvq",
+                     "g4w6ddbmqyzdo6ic4oxwjnrtqlqmobrs3andv7hoatepqvl5pjt6ucsyou3vrnbjb4du5wpnljrrr2q6jnwul5qpqp7ta",
+                     "g4w6ddbmqyzdo6ic4oxwjnrqqpqmsaj23mpdv6hkahep6vt5pjt6ucsyoq4fxprcb4d4mpylxviflwkkiblw5iykpsgl4",
+                     "g4w6ddbmqyzdo6ic4oxwjnrqr3smmbb73ipt36xnada76wt5pjt6ucsyouzf7nzpb4d4mlrue5ijufw77abw5m6nylhgy")
+
+Title9 <- c()
+User9 <- c()
+Date9 <- c()
+Content9 <- c()
+Stars9 <- c()
+counter <- 0  
+  
+for (p in 1:12) {
+  url9 <- paste0(movieURLs[9], '_ajax?&paginationKey=', paginationKeys9[p], sep = "")
+  
+  session <- bow(url9,
+                 user_agent = "Educational")
+  
+  parentNode9 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles9 <- parentNode9 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers9 <- parentNode9 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates9 <- parentNode9 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents9 <- parentNode9 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars9 <- parentNode9 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title9 <- c(Title9, currentTitles9)
+  User9 <- c(User9, currentUsers9)
+  Date9 <- c(Date9, currentDates9)
+  Content9 <- c(Content9, currentContents9)
+  Stars9 <- c(Stars9, currentStars9)
+  
+  # Update counter
+  counter <- counter + length(currentTitles9)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+
+# Create dataframe
+movieReviewData9 <- data.frame(
+  Movie_Title = rep(movieTitles[9], length(counter)),
+  Title = Title9,
+  User = User9,
+  Date = Date9,
+  Content = Content9,
+  Stars = Stars9
+)
+
+```
+
+```{r scrape for 10th movie}
+paginationKeys10 <- c("g4w6ddbmqyzdo6ic4oxwjnrtqpr44ab63ektv6xkb7e7qu35pjt6uckso4zfvprkb4d7sv2ytnkr7c6qk2cgpyixwbyns",
+                      "g4w6ddbmqyzdo6ic4oxwjnzxrdu4sbb72indr4hia7d7stttfjrkudc3ou4fxpzyoaon5koxbduivj55jxyn6qkfckpq",
+                      "g4w6ddbmqyzdo6ic4oxwjnzvrprm4azs2ikt577na7bpwud5pjt6uckso42ftnbkb4dtrqero5vtmm3hla2i3x75wt7xs",
+                      "g4w6ddbmqyzdo6ic4oxwjnztrls4yajz34kdd6pkaxap6v35pjt6ucc3pa2fznjob4d3vfydkzgtnnv4kmsqq4iqqosro",
+                      "g4w6ddbmqyzdo6ic4oxwjnzrqlqmocby3imd74hpapbpqvd5pjt6uc25oezvrmbib4d3qeb3jljsmdywqfl3aq3qygw42",
+                      "g4w6ddbmqyzdo6ic4oxwjnbyrtumucjs3yndb4heahc7eu35pjt6uckspa3f5nblb4duylc3pcgwilrkbnl3o4oej6ega",
+                      "g4w6ddbmqyzdo6ic4oxwjnbzqlt4qbrt3aot54hkaxa72tttfjrkqdktoq2fvpryocomvtnhetinpxuedseo3q2govka",
+                      "g4w6ddbmqyzdo6ic4oxwjnbzr3r44br73mnd74hiapbpsw35pjt6uc24oazvrmjdb4dzs42kjmrbo7tv56thvaksbg2qg",
+                      "g4w6ddbmqyzdo6ic4oxwjnbzrls4sar73upd56pmb7cpwvt5pjt6ucc5oy2frmjmb4d3fuuc3c42sobolajaipqwgai2m",
+                      "g4w6ddbmqyzdo6ic4oxwjnbwrtsmwabz2mntr7hkb3d7uu35pjt6ucs7oezvjmbjb4dqpylyggvmndoa5onddrlxj45vw",
+                      "g4w6ddbmqyzdo6ic4oxwjnbwrpqm6cjz2imdd7xpapdpeu35pjt6uc2toa2f7pzkb4d37zmddbc5uhw5dmnn3f57mpcgo",
+                      "g4w6ddbmqyzdo6ic4oxwjnbxr7rmocjs3iptv6pjb3d7ww35pjt6uc25ou4f7mrmb4dzzjcqie3wilvovrx4ybh34h5ne", 
+                      "g4w6ddbmqyzdo6ic4oxwjnbxrlsmqbz33amtb7xoa7bpsv35pjt6uckso44vlpzkb4dre4kvbsh2qjp62ypeyez6jp5li")
+
+Title10 <- c()
+User10 <- c()
+Date10 <- c()
+Content10 <- c()
+Stars10 <- c()
+counter <- 0  
+  
+for (q in 1:13) {
+  url10 <- paste0(movieURLs[10], '_ajax?&paginationKey=', paginationKeys10[q], sep = "")
+  
+  session <- bow(url10,
+                  user_agent = "Educational")
+  
+  parentNode10 <- scrape(session) %>%
+    html_elements('.review-container')
+  
+  currentTitles10 <- parentNode10 %>%
+    html_node('a.title') %>%
+    html_text()
+  
+  currentUsers10 <- parentNode10 %>%
+    html_node('.display-name-link') %>%
+    html_text()
+  
+  currentDates10 <- parentNode10 %>%
+    html_node('.review-date') %>%
+    html_text()
+  
+  currentContents10 <- parentNode10 %>%
+    html_node('.text.show-more__control') %>%
+    html_text()
+  
+  currentStars10 <- parentNode10 %>%
+    html_node('.ipl-ratings-bar') %>%
+    html_text()
+  
+  # Append data to vectors
+  Title10 <- c(Title10, currentTitles10)
+  User10 <- c(User10, currentUsers10)
+  Date10 <- c(Date10, currentDates10)
+  Content10 <- c(Content10, currentContents10)
+  Stars10 <- c(Stars10, currentStars10)
+  
+  # Update counter
+  counter <- counter + length(currentTitles10)
+  
+  # Check if limit is reached for this movie
+  if (counter == limit) {
+    break
+  }
+}
+Sys.sleep(2) # System pauses for 2 seconds to avoid overloading the server
+
+
+# Create dataframe
+movieReviewData10 <- data.frame(
+  Movie_Title = rep(movieTitles[10], length(counter)),
+  Title = Title10,
+  User = User10,
+  Date = Date10,
+  Content = Content10,
+  Stars = Stars10
+)
+movieReviewData10 <- movieReviewData10[-c(301:323), ]
+```
+
+
+```{r create DF}
+allData <- rbind(movieReviewData1,movieReviewData2, movieReviewData3,movieReviewData4,movieReviewData5,movieReviewData6,movieReviewData7,movieReviewData8,movieReviewData9,movieReviewData10)
+
+
+```
+
+```{r remove}
+rm(movieReviewData2)
+rm(movieReviewData3)
+```
