@@ -865,6 +865,10 @@ allData <- rbind(movieReviewData1,movieReviewData2, movieReviewData3,movieReview
 
 ```
 
+```{r create DF}
+write.csv(allData, file = "MovieReviews.csv")
+```
+
 ```{r remove}
 rm(movieReviewData2)
 rm(movieReviewData3)
