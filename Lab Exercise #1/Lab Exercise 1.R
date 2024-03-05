@@ -10,18 +10,18 @@ columnTypes <- sapply(warpbreaks, typeof)
 numCol <- names(columnTypes[columnTypes == "double"])
 
 warpbreaks[numCol] <- lapply(warpbreaks[numCol], function(x) 
-                             if(is.numeric(x)) as.integer(x) 
-                             else x)
+  if(is.numeric(x)) as.integer(x) 
+  else x)
 
 #derive error
 errorDerive <- tryCatch({
   result <- sampleFunc(0989878554323)
 },
-  error = function(errorCreator) {
-
-  print(paste("Error message:", e$message))
+error = function(errorCreator) {
   
-  print(paste("Underlying type:", typeof(e$object)))
+  print(paste("Error message:", errorCreator$message))
+  
+  print(paste("Underlying type:", typeof(errorCreator$object)))
 })
 
 
@@ -32,9 +32,10 @@ exTxt <- file('exampleFile.txt')
 exampleTxt <- readLines(exTxt)
 
 #extract date
-dateLine <- as.character(exampleTxt[grep("^//", exampleTxt, value = TRUE)[1]])
-extractedDate <- sub("^// Survey data. Created : ", "", dateLine)
-extractedDate <- as.character(extractedDate)
+dateLine <- grep("^//", exampleTxt, value = TRUE)[1]
+dateLine
+extractedDate <- gsub("^// Survey data. Created : ", "", dateLine)
+extractedDate 
 
 
 #separate the comments by using grepl 
@@ -63,6 +64,5 @@ colnames(dataMatr) <- fieldNames
 dataMatr
 
 
-  
-  
-  
+
+
