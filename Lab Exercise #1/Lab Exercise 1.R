@@ -5,7 +5,7 @@ numIntFunction <- sapply(warpbreaks, function(identify) is.numeric(identify) || 
 
 
 #find ount what type of data is in each column
-columnTypes <- sapply(warpbreaks, typeof)
+columnTypes <- sapply(warpbreaks, class)
 
 numCol <- names(columnTypes[columnTypes == "double"])
 
@@ -23,7 +23,6 @@ error = function(errorCreator) {
   
   print(paste("Underlying type:", typeof(errorCreator$object)))
 })
-
 
 
 #B 
@@ -62,6 +61,10 @@ fieldNames
 
 colnames(dataMatr) <- fieldNames
 dataMatr
+
+write.csv(dataMatr, file="exampletxt.csv")
+
+
 
 
 
