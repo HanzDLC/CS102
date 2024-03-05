@@ -1,3 +1,16 @@
+---
+title: 'Lab Exercise #1'
+output: html_document
+date: "2024-03-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r letter A}
 # A
 
 warpbreaks
@@ -5,28 +18,29 @@ numIntFunction <- sapply(warpbreaks, function(identify) is.numeric(identify) || 
 
 
 #find ount what type of data is in each column
-columnTypes <- sapply(warpbreaks, typeof)
+columnTypes <- sapply(warpbreaks, class)
 
 numCol <- names(columnTypes[columnTypes == "double"])
 
 warpbreaks[numCol] <- lapply(warpbreaks[numCol], function(x) 
-                             if(is.numeric(x)) as.integer(x) 
-                             else x)
+  if(is.numeric(x)) as.integer(x) 
+  else x)
 
 #derive error
 errorDerive <- tryCatch({
   result <- sampleFunc(0989878554323)
 },
-  error = function(errorCreator) {
-
+error = function(errorCreator) {
+  
   print(paste("Error message:", errorCreator$message))
   
   print(paste("Underlying type:", typeof(errorCreator$object)))
 })
 
+```
 
 
-#B 
+```{r letter B}
 exTxt <- file('exampleFile.txt')
 
 exampleTxt <- readLines(exTxt)
@@ -63,7 +77,7 @@ fieldNames
 colnames(dataMatr) <- fieldNames
 dataMatr
 
+write.csv(dataMatr, file="exampletxt.csv")
+```
 
-  
-  
-  
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
