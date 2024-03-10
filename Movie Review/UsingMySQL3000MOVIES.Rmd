@@ -1,0 +1,152 @@
+---
+title: "Importing/Exporting of Data"
+author: "Joyce F. Jamile"
+subtitle: Use of MySQL
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Creating connections
+
++ You must have a database first before connecting the RStudio into a database. Depending on the database, a package should be installed like **RMySQL**, **RPostGre**, **MariaDB** to name a few.
+
+> `dbConnect()` is being used to connect the R into MySQL
+
+```{r library}
+library(dplyr,dbplyr)
+library(RMySQL)
+library(RMariaDB)
+```
+
+```{r creating connections}
+
+#creating connections
+connection <- dbConnect(RMariaDB::MariaDB(), 
+                        dsn="MySQL-connection",
+                        Server = "localhost",
+                        dbname = "arxivdb", 
+                        user = "root", 
+                        password = "") #PWD is the password of your MySQL
+```
+
+
+### Listing the tables
+
++ Once connected, `dbListTables` to show or list the tables.
+
+
+
+```{r}
+#listing the tables of the sample_db 
+dbListTables(connection)
+```
+
+
+```{r}
+#listing the fields of the authors in the table sample_db
+dbListFields(connection,"arxivdata")
+```
+
+
+```{r}
+dbListFields(connection,"arxivdata")
+```
+
+
+### Getting data from MySQL
+
++ using the *`dbGetQuery`* is beinng used to get the data
+
++ SQL commands were `SELECT` and `FROM`
+
+
+```{r}
+posts_dta <- dbGetQuery(connection, "SELECT * FROM arxivdata")
+# checking for the columns and its content
+glimpse(posts_dta)
+```
+
+```{r}
+#getting all data using SELECT * FROM dbaseName
+empi_data <- dbGetQuery(connection, "SELECT * FROM arxivdb.arxivdata")
+# checking for the columns and its content
+glimpse(empi_data)
+```
+
+
+```{r}
+#getting all data using SELECT * FROM dbaseName
+empi_data[c(1:10),]
+```
+
+```{r}
+empi_data <- dbGetQuery(connection, "SELECT * FROM arxivdb.arxivdata")
+tail(empi_data)
+```
+
+```{r}
+#alternative way to display selected fields
+#displays the selected fields of the table
+#posts_data <- dbGetQuery(connection, "SELECT title,description FROM sample_db.posts")
+#posts_data[c(1:2),]
+```
+
+```{r}
+#getting all data using SELECT * FROM dbaseName
+SqlQuery <- "
+  SELECT title, abstract 
+  FROM arxivdata
+  "
+
+as_tibble(dbGetQuery(connection,SqlQuery))
+```
+
+### Inserting values into a Table
+
+```{r}
+# insert values into MySQL
+queries <- c(
+  "INSERT INTO arxivdata VALUES('X','Terrible','davish_wulf-1','2022-04-24','It isn''t a porno movie, it isn''t an erotic movie, ...','1/10')",
+  
+  "INSERT INTO arxivdata VALUES('X', 'A fun throwback to 70''s slashers', 'adotson-98233', '2022-03-19', 'X'' is a very bloody, and satisfying horror film from A24 that is able to pack enough scary moments, while also taking its time to develop its characters. The good in this movie right off the bat is the performances. Everyone in the movie is great. The standouts here are Mia Goth and Jenna Ortega. These two were great. The movie also has a really strong message about sex and what it really means for these people. It''s a very strong message and it works. The gore here is also great. It''s a very bloody movie and the final 40 minutes are amazing. It''s also a very good looking movie. It''s very well shot and there''s a lot of creepiness to it. And finally, I actually felt that the villains in this movie were actually very well portrayed. They were given a somewhat tragic issue, and it really added a lot to them. Now I do have a few negatives. The first being that I do wish there were a little more crazy moments. I wish the movie had just a little more bloody moments. I also felt that the first act, while good, was a little too slow-paced. I wish it moved a lot faster. And finally, there are some things that aren''t fully explained towards the end. Overall ''X'' is a very bloody good time with great acting, great direction, and some truly bloody moments.', '8/10')",
+  "INSERT INTO arxivdata VALUES('Argylle','Dua Lipa, Henry and John Cena were NOT in the movie!!!', 'paolocr', '2024-02-02','We have been catfished!!! The actors I wanted to watch in this movie, all had MINOR roles. ...','1/10')",
+  "INSERT INTO arxivdata VALUES('Argylle','Utterly ridiculous but fun', 'actrs02', '2024-10-02','So if you are going into this, you have to know it''s gonna be a little campy. ...','7/10')",
+  "INSERT INTO arxivdata VALUES('Saltburn',' Pretentious nonsense', 'cyd-06327', '2023-12-24','This is a very easy movie to critique. ...','1/10')",
+  "INSERT INTO arxivdata VALUES('Saltburn','Silver Spoon Aspirations...', 'Xstal', '2023-11-18','A scholarship leads to things you can''t afford, ...','7/10')",
+  "INSERT INTO arxivdata VALUES('Dune','One of the best movies in 2021', 'braamekkysport', '2021-04-10','Denise Villeneuve made an amazing movie ,on the other hand I loved the acting of the actors ...','9/10')",
+  "INSERT INTO arxivdata VALUES('Dune','Is it even a possibility that we won''t get part 2?', 'WildBjorn', '2021-09-24','If you love sci fi, if you love Villanueve, watch this movie now. You WILL love it.The world needs part 2.','10/10')",
+  "INSERT INTO arxivdata VALUES('Midsommar','Style, no substance', 'jesse-846-720503', '2019-07-04','I rarely write reviews here. But this movie was SO bad...The opening sequence was very effective. ...','4/10')",
+  "INSERT INTO arxivdata VALUES('Midsommar','Dumb', 'genebotta', '2022-05-25','Tries so hard to be weird it just winds up getting stupid. Whoever likes this is dumb too and has no idea on what quality is. ...','1/10')"
+)
+
+
+
+
+
+
+
+# Execute the query
+for (query in queries) {
+  query_result <- dbSendQuery(connection, query)
+  dbClearResult(query_result)
+}
+
+# clear the result after executing the query
+
+```
+
+
+```{r}
+#checking if the value was inserted into a table
+tail(empi_data)
+```
+```{r}
+#disconnect from dbase
+dbDisconnect(connection)
+```
