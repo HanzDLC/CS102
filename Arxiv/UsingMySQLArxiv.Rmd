@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr,dbplyr)
 library(RMySQL)
 library(RMariaDB)
+library(tidyverse)
 ```
 
 ```{r creating connections}
@@ -33,6 +34,14 @@ connection <- dbConnect(RMariaDB::MariaDB(),
                         dbname = "arxivdb", 
                         user = "root", 
                         password = "") #PWD is the password of your MySQL
+```
+
+```{r import table}
+# Importing data from CSV into arxivPapers
+arxivPapers <- as_tibble(read.csv("ArxivPapersOnTextMIning.csv"))
+
+dbWriteTable(connection, "new_arxivdata_table", arxivPapers, overwrite = TRUE)
+
 ```
 
 
@@ -67,15 +76,13 @@ dbListFields(connection,"arxivdata")
 
 
 ```{r}
-posts_dta <- dbGetQuery(connection, "SELECT * FROM sample_db.posts")
+posts_dta <- dbGetQuery(connection, "SELECT * FROM arxivdb.arxivdata")
 # checking for the columns and its content
 glimpse(posts_dta)
 ```
 
 ```{r}
-#getting all data using SELECT * FROM dbaseName
-empi_data <- dbGetQuery(connection, "SELECT * FROM sample_db.authors")
-# checking for the columns and its content
+#getting all data using SELECT * FROM arxivdb
 glimpse(empi_data)
 ```
 
@@ -86,22 +93,22 @@ empi_data[c(1:10),]
 ```
 
 ```{r}
-empi_data <- dbGetQuery(connection, "SELECT * FROM sample_db.authors")
+empi_data <- dbGetQuery(connection, "SELECT * FROM arxivdb.authors")
 tail(empi_data)
 ```
 
 ```{r}
 #alternative way to display selected fields
 #displays the selected fields of the table
-posts_data <- dbGetQuery(connection, "SELECT title,description FROM sample_db.posts")
+posts_data <- dbGetQuery(connection, "SELECT title,abstract FROM arxivdb.arxivdata")
 posts_data[c(1:2),]
 ```
 
 ```{r}
 #getting all data using SELECT * FROM dbaseName
 SqlQuery <- "
-  SELECT title,description 
-  FROM sample_db.posts
+  SELECT title,abstract
+  FROM arxivdata
   "
 
 as_tibble(dbGetQuery(connection,SqlQuery))
@@ -110,14 +117,24 @@ as_tibble(dbGetQuery(connection,SqlQuery))
 ### Inserting values into a Table
 
 ```{r}
-# insert values into MySQL
-query <- "INSERT INTO authors (id, first_name, last_name, email, birthdate, added) VALUES (102, 'Juan', 'dela Cruz', 'mine@example.com', '2005-12-02','2024-02-19 05:00:10')"
+for (i in 1:150) {
+  current_row <- arxivPapers[i, ]
 
-# Execute the query
-query_result <- dbSendQuery(connection, query)
+  # Quote and escape string values using dbQuoteString
+  title <- dbQuoteString(connection, current_row$title)
+  author <- dbQuoteString(connection, current_row$author)
+  subject <- dbQuoteString(connection, current_row$subject)
+  abstract <- dbQuoteString(connection, current_row$abstract)
+  meta <- dbQuoteString(connection, current_row$meta)
 
-# clear the result after executing the query
-dbClearResult(query_result)
+  # Create an INSERT INTO query
+  query <- ("INSERT INTO arxivdata (title, author, subject, abstract, meta) VALUES ({title}, {author}, {subject}, {abstract}, {meta})")
+
+
+  query_result <- dbSendQuery(connection, query)
+  dbClearResult(query_result)
+}
+
 ```
 
 
